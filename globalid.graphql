@@ -2,50 +2,45 @@ directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITI
 scalar Time
 
 interface Node {
-    id: ID! @goField(name: "GlobalID")
+  id: ID! @goField(name: "GlobalID")
 }
 
-type User implements Node {
-    id: ID! @goField(name: "GlobalID")
-    age: Int!
-    name: String!
-    createdAt: Time!
+type User implements Node @key(fields: "id") {
+  id: ID! @goField(name: "GlobalID") @external
+  age: Int!
+  name: String!
+  createdAt: Time!
 }
 
 type PageInfo {
-    hasNextPage: Boolean!
-    hasPreviousPage: Boolean!
-    startCursor: String
-    endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
 }
 
 type UserConnection {
-    totalCount: Int!
-    pageInfo: PageInfo!
-    edges: [UserEdge]
-}
-
-type UserEdge {
-    node: User
-    cursor: String!
+  totalCount: Int!
+  pageInfo: PageInfo!
+  nodes: [User!]!
 }
 
 enum OrderDirection {
-    ASC
-    DESC
+  ASC
+  DESC
 }
 
 enum UserOrderField {
-    CREATED_AT
+  CREATED_AT
 }
 
 input UserOrder {
-    direction: OrderDirection!
-    field: UserOrderField
+  direction: OrderDirection!
+  field: UserOrderField
 }
 
 type Query {
-    node(id: ID!): Node
-    nodes(ids: [ID!]!): [Node]!
-    users(after: String, first: Int, before: String, last: Int, orderBy: UserOrder, where: UserWhereInput): UserConnection
+  node(id: ID!): Node
+  nodes(ids: [ID!]!): [Node]!
+  users(after: String, first: Int, before: String, last: Int, orderBy: UserOrder, where: UserWhereInput): UserConnection
 }

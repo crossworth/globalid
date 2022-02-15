@@ -30,11 +30,8 @@ func TestGlobalID(t *testing.T) {
 
 	type users struct {
 		Users struct {
-			Edges []struct {
-				Cursor string
-				Node   struct {
-					ID string
-				}
+			Nodes []struct {
+				ID string
 			}
 		}
 	}
@@ -44,15 +41,13 @@ func TestGlobalID(t *testing.T) {
 		graphQLClient.MustPost(`
 query {
 	users(first: 1) {
-		edges {
-			node {
-				id
-			}
+		nodes {
+			id
 		}
 	}
 }
 `, &resp)
-		gid := resp.Users.Edges[0].Node.ID
+		gid := resp.Users.Nodes[0].ID
 		id, err := base64.URLEncoding.DecodeString(gid)
 		if err != nil {
 			t.Fatal(err)
@@ -66,15 +61,13 @@ query {
 		graphQLClient.MustPost(`
 query {
 	users(first: 1, after: "MTMKMDI0ODI0NTEtMDk2MS00ODIyLTlkZDgtMjA1ZWJhYjY5ZDhj" ) {
-		edges {
-			node {
-				id
-			}
+		nodes {
+			id
 		}
 	}
 }
 `, &resp)
-		gid := resp.Users.Edges[0].Node.ID
+		gid := resp.Users.Nodes[0].ID
 		id, err := base64.URLEncoding.DecodeString(gid)
 		if err != nil {
 			t.Fatal(err)

@@ -41,8 +41,12 @@ func (r *queryResolver) Users(ctx context.Context, after *string, first *int, be
 	)
 }
 
-func (r *userEdgeResolver) Cursor(ctx context.Context, obj *ent.UserEdge) (string, error) {
-	return *MarshalCursor(&obj.Cursor), nil
+func (r *userConnectionResolver) Nodes(ctx context.Context, obj *ent.UserConnection) ([]*ent.User, error) {
+	result := make([]*ent.User, 0, len(obj.Edges))
+	for i := range obj.Edges {
+		result = append(result, obj.Edges[i].Node)
+	}
+	return result, nil
 }
 
 // PageInfo returns PageInfoResolver implementation.
@@ -51,9 +55,9 @@ func (r *Resolver) PageInfo() PageInfoResolver { return &pageInfoResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
-// UserEdge returns UserEdgeResolver implementation.
-func (r *Resolver) UserEdge() UserEdgeResolver { return &userEdgeResolver{r} }
+// UserConnection returns UserConnectionResolver implementation.
+func (r *Resolver) UserConnection() UserConnectionResolver { return &userConnectionResolver{r} }
 
 type pageInfoResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-type userEdgeResolver struct{ *Resolver }
+type userConnectionResolver struct{ *Resolver }

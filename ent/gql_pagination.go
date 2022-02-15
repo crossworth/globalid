@@ -188,7 +188,7 @@ func hasCollectedField(ctx context.Context, path ...string) bool {
 }
 
 const (
-	edgesField      = "edges"
+	edgesField      = "nodes"
 	nodeField       = "node"
 	pageInfoField   = "pageInfo"
 	totalCountField = "totalCount"
