@@ -1,5 +1,6 @@
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 scalar Cursor
+scalar Time
 
 interface Node {
     id: ID! @goField(name: "GlobalID")
@@ -9,6 +10,7 @@ type User implements Node {
     id: ID! @goField(name: "GlobalID")
     age: Int!
     name: String!
+    createdAt: Time!
 }
 
 type PageInfo {
@@ -29,8 +31,22 @@ type UserEdge {
     cursor: Cursor!
 }
 
+enum OrderDirection {
+    ASC
+    DESC
+}
+
+enum UserOrderField {
+    CREATED_AT
+}
+
+input UserOrder {
+    direction: OrderDirection!
+    field: UserOrderField
+}
+
 type Query {
     node(id: ID!): Node
     nodes(ids: [ID!]!): [Node]!
-    users(after: Cursor, first: Int, before: Cursor, last: Int,where: UserWhereInput): UserConnection
+    users(after: Cursor, first: Int, before: Cursor, last: Int, orderBy: UserOrder, where: UserWhereInput): UserConnection
 }

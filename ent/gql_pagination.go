@@ -86,6 +86,7 @@ func cursorsToPredicates(direction OrderDirection, after, before *Cursor, field,
 		})
 	}
 	if before != nil {
+
 		var predicate func(string, interface{}) *sql.Predicate
 		if direction == OrderDirectionAsc {
 			predicate = sql.LT
@@ -384,6 +385,49 @@ func (u *UserQuery) Paginate(
 	}
 
 	return conn, nil
+}
+
+var (
+	// UserOrderFieldCreatedAt orders User by created_at.
+	UserOrderFieldCreatedAt = &UserOrderField{
+		field: user.FieldCreatedAt,
+		toCursor: func(u *User) Cursor {
+			return Cursor{
+				ID:   fmt.Sprint(u.ID),
+				Type: "user",
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f UserOrderField) String() string {
+	var str string
+	switch f.field {
+	case user.FieldCreatedAt:
+		str = "CREATED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f UserOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *UserOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("UserOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *UserOrderFieldCreatedAt
+	default:
+		return fmt.Errorf("%s is not a valid UserOrderField", str)
+	}
+	return nil
 }
 
 // UserOrderField defines the ordering field of User.

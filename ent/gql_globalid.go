@@ -13,6 +13,7 @@ import (
 	"entgo.io/bug/ent/user"
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 )
 
@@ -56,8 +57,8 @@ func (g *GlobalID) UnmarshalGQL(v interface{}) error {
 
 	switch g.Type {
 	case typeUser:
-		rt, err := strconv.Atoi(g.ID)
-		if err != nil {
+		var rt uuid.UUID
+		if err := rt.UnmarshalText([]byte(g.ID)); err != nil {
 			return err
 		}
 		g.resolvedType = rt
@@ -75,34 +76,34 @@ func (g GlobalID) String() string {
 	return marshalGlobalID(g)
 }
 
-func (g *GlobalID) Int() int {
-	return g.resolvedType.(int)
+func (g *GlobalID) UUID() uuid.UUID {
+	return g.resolvedType.(uuid.UUID)
 }
 
-func GlobalIDsPtrToInts(ids []*GlobalID) []int {
-	r := make([]int, 0, len(ids))
+func GlobalIDsPtrToUUIDs(ids []*GlobalID) []uuid.UUID {
+	r := make([]uuid.UUID, 0, len(ids))
 	for i := range ids {
-		r = append(r, ids[i].Int())
+		r = append(r, ids[i].UUID())
 	}
 	return r
 }
 
-func GlobalIDsToInts(ids []GlobalID) []int {
-	r := make([]int, 0, len(ids))
+func GlobalIDsToUUIDs(ids []GlobalID) []uuid.UUID {
+	r := make([]uuid.UUID, 0, len(ids))
 	for i := range ids {
-		r = append(r, ids[i].Int())
+		r = append(r, ids[i].UUID())
 	}
 	return r
 }
 
 // GlobalID returns the global identifier for the given User node.
 func (u *User) GlobalID(ctx context.Context) GlobalID {
-	return GlobalID{Type: typeUser, ID: fmt.Sprintf("%d", u.ID), resolvedType: u.ID}
+	return GlobalID{Type: typeUser, ID: fmt.Sprintf("%s", u.ID), resolvedType: u.ID}
 }
 
 // NewUserGlobalID creates a global identifier for the given User node.
-func NewUserGlobalID(id int) GlobalID {
-	return GlobalID{Type: typeUser, ID: fmt.Sprintf("%d", id), resolvedType: id}
+func NewUserGlobalID(id uuid.UUID) GlobalID {
+	return GlobalID{Type: typeUser, ID: fmt.Sprintf("%s", id), resolvedType: id}
 }
 
 // GlobalIDPtr returns a *GlobalID from the provided GlobalID.
@@ -118,7 +119,7 @@ func (c *Client) FromGlobalID(ctx context.Context, r GlobalID) (_ Noder, err err
 	}()
 	switch r.Type {
 	case typeUser:
-		id := r.Int()
+		id := r.UUID()
 		n, err := c.User.Query().
 			Where(user.ID(id)).
 			CollectFields(ctx, "User").
@@ -193,12 +194,12 @@ func (c *Client) nodes(ctx context.Context, typ string, rs []*GlobalID) ([]Noder
 	noders := make([]Noder, len(rs))
 	switch typ {
 	case typeUser:
-		ids := make([]int, len(rs))
+		ids := make([]uuid.UUID, len(rs))
 		for i := range ids {
-			id := rs[i].Int()
+			id := rs[i].UUID()
 			ids[i] = id
 		}
-		idmap := make(map[int][]*Noder, len(ids))
+		idmap := make(map[uuid.UUID][]*Noder, len(ids))
 		for i, id := range ids {
 			idmap[id] = append(idmap[id], &noders[i])
 		}

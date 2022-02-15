@@ -4,6 +4,7 @@ package ent
 
 import (
 	"fmt"
+	"time"
 
 	"entgo.io/bug/ent/predicate"
 	"entgo.io/bug/ent/user"
@@ -49,6 +50,16 @@ type UserWhereInput struct {
 	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
 }
 
 // Filter applies the UserWhereInput filter on the UserQuery builder.
@@ -110,29 +121,37 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 		}
 		predicates = append(predicates, user.And(and...))
 	}
+
 	if i.ID != nil {
-		predicates = append(predicates, user.IDEQ(i.ID.Int()))
+		predicates = append(predicates, user.IDEQ(i.ID.UUID()))
 	}
+
 	if i.IDNEQ != nil {
-		predicates = append(predicates, user.IDNEQ(i.IDNEQ.Int()))
+		predicates = append(predicates, user.IDNEQ(i.IDNEQ.UUID()))
 	}
+
 	if i.IDIn != nil {
-		predicates = append(predicates, user.IDIn(GlobalIDsToInts(i.IDIn)...))
+		predicates = append(predicates, user.IDIn(GlobalIDsToUUIDs(i.IDIn)...))
 	}
+
 	if i.IDNotIn != nil {
-		predicates = append(predicates, user.IDNotIn(GlobalIDsToInts(i.IDNotIn)...))
+		predicates = append(predicates, user.IDNotIn(GlobalIDsToUUIDs(i.IDNotIn)...))
 	}
+
 	if i.IDGT != nil {
-		predicates = append(predicates, user.IDGT(i.IDGT.Int()))
+		predicates = append(predicates, user.IDGT(i.IDGT.UUID()))
 	}
+
 	if i.IDGTE != nil {
-		predicates = append(predicates, user.IDGTE(i.IDGTE.Int()))
+		predicates = append(predicates, user.IDGTE(i.IDGTE.UUID()))
 	}
+
 	if i.IDLT != nil {
-		predicates = append(predicates, user.IDLT(i.IDLT.Int()))
+		predicates = append(predicates, user.IDLT(i.IDLT.UUID()))
 	}
+
 	if i.IDLTE != nil {
-		predicates = append(predicates, user.IDLTE(i.IDLTE.Int()))
+		predicates = append(predicates, user.IDLTE(i.IDLTE.UUID()))
 	}
 	if i.Age != nil {
 		predicates = append(predicates, user.AgeEQ(*i.Age))
@@ -196,6 +215,30 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 	}
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, user.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, user.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, user.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, user.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, user.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, user.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, user.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, user.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, user.CreatedAtLTE(*i.CreatedAtLTE))
 	}
 
 	switch len(predicates) {

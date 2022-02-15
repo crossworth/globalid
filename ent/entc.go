@@ -12,26 +12,26 @@ import (
 )
 
 func main() {
-	// customWhere := gen.MustParse(gen.NewTemplate("../templates/where_input.tmpl").
-	// 	Funcs(gen.Funcs).
-	// 	Funcs(entgql.TemplateFuncs).
-	// 	ParseFiles("../templates/where_input.tmpl"))
-	//
-	// entgqlTemplates := []*gen.Template{
-	// 	entgql.CollectionTemplate,
-	// 	entgql.EnumTemplate,
-	// 	entgql.NodeTemplate,
-	// 	entgql.PaginationTemplate,
-	// 	entgql.TransactionTemplate,
-	// 	entgql.EdgeTemplate,
-	// 	customWhere,
-	// }
+	customPagination := gen.MustParse(gen.NewTemplate("template/pagination.tmpl").
+		Funcs(gen.Funcs).
+		Funcs(entgql.TemplateFuncs).
+		ParseFiles("../templates/pagination.tmpl"))
+
+	entgqlTemplates := []*gen.Template{
+		entgql.CollectionTemplate,
+		entgql.EnumTemplate,
+		entgql.GlobalIDTemplate,
+		entgql.NodeTemplate,
+		customPagination,
+		entgql.TransactionTemplate,
+		entgql.EdgeTemplate,
+	}
 
 	ex, err := entgql.NewExtension(
 		entgql.WithWhereFilters(true),
 		entgql.WithSchemaPath("../ent.graphql"),
 		entgql.WithConfigPath("../gqlgen.yml"),
-		// entgql.WithTemplates(entgqlTemplates...),
+		entgql.WithTemplates(entgqlTemplates...),
 	)
 	if err != nil {
 		log.Fatalf("creating entgql extension: %v", err)

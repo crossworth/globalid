@@ -89,20 +89,7 @@ in the LICENSE file in the root directory of this source tree.
     var predicates []func(s *sql.Selector)
     {{- range $cursor, $ops := dict "after" (list "GT" "LT") "before" (list "LT" "GT") }}
         if {{ $cursor }} != nil {
-        if {{ $cursor }}.Value != nil {
-        var predicate func([]string, ...interface{}) *sql.Predicate
-        if direction == OrderDirectionAsc {
-        predicate = sql.Composite{{ index $ops 0 }}
-        } else {
-        predicate = sql.Composite{{ index $ops 1 }}
-        }
-        predicates = append(predicates, func(s *sql.Selector) {
-        s.Where(predicate(
-        s.Columns(field, idField),
-        {{ $cursor }}.Value, {{ $cursor }}.ID,
-        ))
-        })
-        } else {
+
         var predicate func(string, interface{}) *sql.Predicate
         if direction == OrderDirectionAsc {
         predicate = sql.{{ index $ops 0 }}
@@ -115,7 +102,6 @@ in the LICENSE file in the root directory of this source tree.
         {{ $cursor }}.ID,
         ))
         })
-        }
         }
     {{- end }}
     return predicates
@@ -131,34 +117,27 @@ in the LICENSE file in the root directory of this source tree.
 
     // Cursor of an edge type.
     type Cursor struct {
-    ID string `msgpack:"i"`
-    Value Value       `msgpack:"v,omitempty"`
+    ID   string
+    Type string
     }
 
     // MarshalGQL implements graphql.Marshaler interface.
     func (c Cursor) MarshalGQL(w io.Writer) {
     quote := []byte{'"'}
     w.Write(quote)
-    defer w.Write(quote)
-    wc := base64.NewEncoder(base64.RawStdEncoding, w)
-    defer wc.Close()
-    _ = msgpack.NewEncoder(wc).Encode(c)
+    w.Write([]byte(newLineMarshal(GlobalID{ID: c.ID, Type: c.Type})))
+    w.Write(quote)
     }
 
     // UnmarshalGQL implements graphql.Unmarshaler interface.
     func (c *Cursor) UnmarshalGQL(v interface{}) error {
-    s, ok := v.(string)
-    if !ok {
-    return fmt.Errorf("%T is not a string", v)
+    id := GlobalID{}
+    err := id.UnmarshalGQL(v)
+    if err != nil {
+    return err
     }
-    if err := msgpack.NewDecoder(
-    base64.NewDecoder(
-    base64.RawStdEncoding,
-    strings.NewReader(s),
-    ),
-    ).Decode(c); err != nil {
-    return fmt.Errorf("cannot decode cursor: %w", err)
-    }
+
+    c.ID = id.ID
     return nil
     }
 
@@ -444,7 +423,7 @@ in the LICENSE file in the root directory of this source tree.
                 toCursor: func({{ $r }} *{{ $name }}) Cursor {
                 return Cursor{
                 ID: fmt.Sprint({{ $r }}.ID),
-                Value: {{ $r }}.{{ $f.StructField }},
+                Type: "{{ $name | lower }}",
                 }
                 },
                 }
@@ -504,7 +483,7 @@ in the LICENSE file in the root directory of this source tree.
         Field: &{{ $orderField }}{
         field: {{ $node.Package }}.{{ $node.ID.Constant }},
         toCursor: func({{ $r }} *{{ $name }}) Cursor {
-        return Cursor{ID: fmt.Sprint({{ $r }}.ID)}
+        return Cursor{ID: fmt.Sprint({{ $r }}.ID), Type: "{{  $node.Name | lower }}"}
         },
         },
         }

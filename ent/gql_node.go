@@ -52,7 +52,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     u.GlobalID(ctx),
 		Type:   "User",
-		Fields: make([]*Field, 2),
+		Fields: make([]*Field, 3),
 		Edges:  make([]*Edge, 0),
 	}
 	var buf []byte
@@ -70,6 +70,14 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	node.Fields[1] = &Field{
 		Type:  "string",
 		Name:  "name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(u.CreatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "time.Time",
+		Name:  "created_at",
 		Value: string(buf),
 	}
 	return node, nil
@@ -136,7 +144,7 @@ func (c *Client) noder(ctx context.Context, table string, id GlobalID) (Noder, e
 	switch table {
 	case user.Table:
 		n, err := c.User.Query().
-			Where(user.ID(id.Int())).
+			Where(user.ID(id.UUID())).
 			CollectFields(ctx, "User").
 			Only(ctx)
 		if err != nil {
@@ -214,7 +222,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []GlobalID) ([]No
 	switch table {
 	case user.Table:
 		nodes, err := c.User.Query().
-			Where(user.IDIn(GlobalIDsToInts(ids)...)).
+			Where(user.IDIn(GlobalIDsToUUIDs(ids)...)).
 			CollectFields(ctx, "User").
 			All(ctx)
 		if err != nil {

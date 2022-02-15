@@ -17,8 +17,11 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []*ent.GlobalID) ([]ent.N
 	return r.client.Noders(ctx, ids)
 }
 
-func (r *queryResolver) Users(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.UserWhereInput) (*ent.UserConnection, error) {
-	return r.client.User.Query().Paginate(ctx, after, first, before, last, ent.WithUserFilter(where.Filter))
+func (r *queryResolver) Users(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.UserOrder, where *ent.UserWhereInput) (*ent.UserConnection, error) {
+	return r.client.User.Query().Paginate(ctx, after, first, before, last,
+		ent.WithUserOrder(orderBy),
+		ent.WithUserFilter(where.Filter),
+	)
 }
 
 // Query returns QueryResolver implementation.
