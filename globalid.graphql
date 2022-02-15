@@ -1,0 +1,36 @@
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+scalar Cursor
+
+interface Node {
+    id: ID! @goField(name: "GlobalID")
+}
+
+type User implements Node {
+    id: ID! @goField(name: "GlobalID")
+    age: Int!
+    name: String!
+}
+
+type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: Cursor
+    endCursor: Cursor
+}
+
+type UserConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [UserEdge]
+}
+
+type UserEdge {
+    node: User
+    cursor: Cursor!
+}
+
+type Query {
+    node(id: ID!): Node
+    nodes(ids: [ID!]!): [Node]!
+    users(after: Cursor, first: Int, before: Cursor, last: Int,where: UserWhereInput): UserConnection
+}

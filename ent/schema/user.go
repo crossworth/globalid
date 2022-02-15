@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
 )
@@ -13,12 +14,8 @@ type User struct {
 // Fields of the User.
 func (User) Fields() []ent.Field {
 	return []ent.Field{
+		field.Int("id").Annotations(entgql.GlobalID()),
 		field.Int("age"),
 		field.String("name"),
 	}
-}
-
-// Edges of the User.
-func (User) Edges() []ent.Edge {
-	return nil
 }
