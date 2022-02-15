@@ -37,7 +37,9 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	PageInfo() PageInfoResolver
 	Query() QueryResolver
+	UserEdge() UserEdgeResolver
 }
 
 type DirectiveRoot struct {
@@ -54,7 +56,7 @@ type ComplexityRoot struct {
 	Query struct {
 		Node  func(childComplexity int, id ent.GlobalID) int
 		Nodes func(childComplexity int, ids []*ent.GlobalID) int
-		Users func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.UserOrder, where *ent.UserWhereInput) int
+		Users func(childComplexity int, after *string, first *int, before *string, last *int, orderBy *ent.UserOrder, where *ent.UserWhereInput) int
 	}
 
 	User struct {
@@ -76,10 +78,17 @@ type ComplexityRoot struct {
 	}
 }
 
+type PageInfoResolver interface {
+	StartCursor(ctx context.Context, obj *ent.PageInfo) (*string, error)
+	EndCursor(ctx context.Context, obj *ent.PageInfo) (*string, error)
+}
 type QueryResolver interface {
 	Node(ctx context.Context, id ent.GlobalID) (ent.Noder, error)
 	Nodes(ctx context.Context, ids []*ent.GlobalID) ([]ent.Noder, error)
-	Users(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.UserOrder, where *ent.UserWhereInput) (*ent.UserConnection, error)
+	Users(ctx context.Context, after *string, first *int, before *string, last *int, orderBy *ent.UserOrder, where *ent.UserWhereInput) (*ent.UserConnection, error)
+}
+type UserEdgeResolver interface {
+	Cursor(ctx context.Context, obj *ent.UserEdge) (string, error)
 }
 
 type executableSchema struct {
@@ -159,7 +168,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Users(childComplexity, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["orderBy"].(*ent.UserOrder), args["where"].(*ent.UserWhereInput)), true
+		return e.complexity.Query.Users(childComplexity, args["after"].(*string), args["first"].(*int), args["before"].(*string), args["last"].(*int), args["orderBy"].(*ent.UserOrder), args["where"].(*ent.UserWhereInput)), true
 
 	case "User.age":
 		if e.complexity.User.Age == nil {
@@ -275,7 +284,6 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var sources = []*ast.Source{
 	{Name: "globalid.graphql", Input: `directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
-scalar Cursor
 scalar Time
 
 interface Node {
@@ -292,8 +300,8 @@ type User implements Node {
 type PageInfo {
     hasNextPage: Boolean!
     hasPreviousPage: Boolean!
-    startCursor: Cursor
-    endCursor: Cursor
+    startCursor: String
+    endCursor: String
 }
 
 type UserConnection {
@@ -304,7 +312,7 @@ type UserConnection {
 
 type UserEdge {
     node: User
-    cursor: Cursor!
+    cursor: String!
 }
 
 enum OrderDirection {
@@ -324,7 +332,7 @@ input UserOrder {
 type Query {
     node(id: ID!): Node
     nodes(ids: [ID!]!): [Node]!
-    users(after: Cursor, first: Int, before: Cursor, last: Int, orderBy: UserOrder, where: UserWhereInput): UserConnection
+    users(after: String, first: Int, before: String, last: Int, orderBy: UserOrder, where: UserWhereInput): UserConnection
 }`, BuiltIn: false},
 	{Name: "ent.graphql", Input: `"""
 UserWhereInput is used for filtering User objects.
@@ -436,10 +444,10 @@ func (ec *executionContext) field_Query_nodes_args(ctx context.Context, rawArgs 
 func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *ent.Cursor
+	var arg0 *string
 	if tmp, ok := rawArgs["after"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
-		arg0, err = ec.unmarshalOCursor2ᚖentgoᚗioᚋbugᚋentᚐCursor(ctx, tmp)
+		arg0, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -454,10 +462,10 @@ func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs 
 		}
 	}
 	args["first"] = arg1
-	var arg2 *ent.Cursor
+	var arg2 *string
 	if tmp, ok := rawArgs["before"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
-		arg2, err = ec.unmarshalOCursor2ᚖentgoᚗioᚋbugᚋentᚐCursor(ctx, tmp)
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -627,14 +635,14 @@ func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field gra
 		Object:     "PageInfo",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.StartCursor, nil
+		return ec.resolvers.PageInfo().StartCursor(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -643,9 +651,9 @@ func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field gra
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*ent.Cursor)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOCursor2ᚖentgoᚗioᚋbugᚋentᚐCursor(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *ent.PageInfo) (ret graphql.Marshaler) {
@@ -659,14 +667,14 @@ func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graph
 		Object:     "PageInfo",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.EndCursor, nil
+		return ec.resolvers.PageInfo().EndCursor(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -675,9 +683,9 @@ func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graph
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*ent.Cursor)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOCursor2ᚖentgoᚗioᚋbugᚋentᚐCursor(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_node(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -786,7 +794,7 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Users(rctx, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["orderBy"].(*ent.UserOrder), args["where"].(*ent.UserWhereInput))
+		return ec.resolvers.Query().Users(rctx, args["after"].(*string), args["first"].(*int), args["before"].(*string), args["last"].(*int), args["orderBy"].(*ent.UserOrder), args["where"].(*ent.UserWhereInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1156,14 +1164,14 @@ func (ec *executionContext) _UserEdge_cursor(ctx context.Context, field graphql.
 		Object:     "UserEdge",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Cursor, nil
+		return ec.resolvers.UserEdge().Cursor(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1175,9 +1183,9 @@ func (ec *executionContext) _UserEdge_cursor(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(ent.Cursor)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNCursor2entgoᚗioᚋbugᚋentᚐCursor(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -2715,7 +2723,7 @@ func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = innerFunc(ctx)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "hasPreviousPage":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -2725,22 +2733,42 @@ func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = innerFunc(ctx)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "startCursor":
+			field := field
+
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._PageInfo_startCursor(ctx, field, obj)
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PageInfo_startCursor(ctx, field, obj)
+				return res
 			}
 
-			out.Values[i] = innerFunc(ctx)
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
 
+			})
 		case "endCursor":
+			field := field
+
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._PageInfo_endCursor(ctx, field, obj)
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PageInfo_endCursor(ctx, field, obj)
+				return res
 			}
 
-			out.Values[i] = innerFunc(ctx)
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
 
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2996,15 +3024,25 @@ func (ec *executionContext) _UserEdge(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = innerFunc(ctx)
 
 		case "cursor":
+			field := field
+
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._UserEdge_cursor(ctx, field, obj)
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UserEdge_cursor(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
 
-			out.Values[i] = innerFunc(ctx)
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
 
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3438,16 +3476,6 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) unmarshalNCursor2entgoᚗioᚋbugᚋentᚐCursor(ctx context.Context, v interface{}) (ent.Cursor, error) {
-	var res ent.Cursor
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNCursor2entgoᚗioᚋbugᚋentᚐCursor(ctx context.Context, sel ast.SelectionSet, v ent.Cursor) graphql.Marshaler {
-	return v
 }
 
 func (ec *executionContext) unmarshalNID2entgoᚗioᚋbugᚋentᚐGlobalID(ctx context.Context, v interface{}) (ent.GlobalID, error) {
@@ -3887,22 +3915,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
-}
-
-func (ec *executionContext) unmarshalOCursor2ᚖentgoᚗioᚋbugᚋentᚐCursor(ctx context.Context, v interface{}) (*ent.Cursor, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(ent.Cursor)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOCursor2ᚖentgoᚗioᚋbugᚋentᚐCursor(ctx context.Context, sel ast.SelectionSet, v *ent.Cursor) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
 }
 
 func (ec *executionContext) unmarshalOID2ᚕentgoᚗioᚋbugᚋentᚐGlobalIDᚄ(ctx context.Context, v interface{}) ([]ent.GlobalID, error) {

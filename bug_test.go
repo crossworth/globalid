@@ -31,7 +31,8 @@ func TestGlobalID(t *testing.T) {
 	type users struct {
 		Users struct {
 			Edges []struct {
-				Node struct {
+				Cursor string
+				Node   struct {
 					ID string
 				}
 			}

@@ -1,5 +1,4 @@
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
-scalar Cursor
 scalar Time
 
 interface Node {
@@ -16,8 +15,8 @@ type User implements Node {
 type PageInfo {
     hasNextPage: Boolean!
     hasPreviousPage: Boolean!
-    startCursor: Cursor
-    endCursor: Cursor
+    startCursor: String
+    endCursor: String
 }
 
 type UserConnection {
@@ -28,7 +27,7 @@ type UserConnection {
 
 type UserEdge {
     node: User
-    cursor: Cursor!
+    cursor: String!
 }
 
 enum OrderDirection {
@@ -48,5 +47,5 @@ input UserOrder {
 type Query {
     node(id: ID!): Node
     nodes(ids: [ID!]!): [Node]!
-    users(after: Cursor, first: Int, before: Cursor, last: Int, orderBy: UserOrder, where: UserWhereInput): UserConnection
+    users(after: String, first: Int, before: String, last: Int, orderBy: UserOrder, where: UserWhereInput): UserConnection
 }
